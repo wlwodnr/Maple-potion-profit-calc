@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>물약 손익 계산기</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f4f8;
+      color: #333;
+      margin: 0;
+      padding: 30px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 600px;
+      background: white;
+      margin: 0 auto;
+      padding: 25px 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .note {
+      font-size: 0.85rem;
+      color: #777;
+      margin-top: -10px;
+      margin-bottom: 15px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      margin-bottom: 4px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #result {
+      margin-top: 25px;
+      background-color: #f8f9fa;
+      border-left: 4px solid #4CAF50;
+      padding: 15px 20px;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    #result p {
+      margin: 6px 0;
+    }
+  </style>
+</head>
+<body>
+  <h2>💰 물약 손익 계산기</h2>
+
+  <div class="container">
+    <label>씨앗 단가 (만원):
+      <input type="number" id="seedPrice" value="50">
+    </label>
+
+    <label>오일 단가 (만원):
+      <input type="number" id="oilFixedPrice" value="0">
+    </label>
+    <div class="note">※ 씨앗 단가와 오일 단가 중 <strong>하나만 입력</strong>하세요. 다른 하나는 0으로 두어야 합니다.</div>
+
+    <label>오일 제작 성공률 (%):
+      <input type="number" id="oilSuccess" value="90">
+    </label>
+
+    <label>필요한 오일 개수 (1회당):
+      <input type="number" id="oilCount" value="5">
+    </label>
+
+    <label>추가 재료 비용 (만원):
+      <input type="number" id="extraCost" value="50">
+    </label>
+
+    <label>1회 제작 시 물약 개수:
+      <input type="number" id="potionPerCraft" value="6">
+    </label>
+
+    <label>하루 제작 횟수:
+      <input type="number" id="makeCount" value="170">
+    </label>
+
+    <label>물약 개당 판매가 (만원):
+      <input type="number" id="potionPrice" value="305">
+    </label>
+
+    <label>수수료율 (%):
+      <input type="number" id="feeRate" value="5">
+    </label>
+
+    <button onclick="calculate()">📊 계산하기</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function formatKoreanMoney(val) {
+      if (val >= 10000) {
+        const eok = Math.floor(val / 10000);
+        const chun = val % 10000;
+        return `${eok}억${chun > 0 ? ' ' + chun.toLocaleString() + '만원' : ''}`;
+      } else {
+        return val.toLocaleString() + '만원';
+      }
+    }
+
+    function calculate() {
+      const seed = parseFloat(document.getElementById("seedPrice").value);
+      const oilFixedPrice = parseFloat(document.getElementById("oilFixedPrice").value);
+
+      // 둘 다 0이거나 둘 다 0이 아니면 경고
+      if ((seed === 0 && oilFixedPrice === 0) || (seed !== 0 && oilFixedPrice !== 0)) {
+        alert("⚠ 씨앗 단가와 오일 단가 중 하나만 입력하고, 다른 하나는 0으로 설정해주세요.");
+        return;
+      }
+
+      const oilSuccess = parseFloat(document.getElementById("oilSuccess").value) / 100;
+      const oilCount = parseFloat(document.getElementById("oilCount").value);
+      const extra = parseFloat(document.getElementById("extraCost").value);
+      const potionPerCraft = parseFloat(document.getElementById("potionPerCraft").value);
+      const potionPrice = parseFloat(document.getElementById("potionPrice").value);
+      const feeRate = parseFloat(document.getElementById("feeRate").value) / 100;
+      const makeCount = parseFloat(document.getElementById("makeCount").value);
+
+      const oilCost = oilFixedPrice > 0 ? oilFixedPrice : (6 / oilSuccess) * seed;
+      const totalOilCost = oilCost * oilCount;
+      const perTryCost = totalOilCost + extra;
+
+      const potionNet = potionPrice * (1 - feeRate);
+      const revenuePerTry = potionNet * potionPerCraft;
+      const profitPerTry = revenuePerTry - perTryCost;
+
+      const totalProfit = profitPerTry * makeCount;
+      const totalCost = perTryCost * makeCount;
+      const totalRevenue = revenuePerTry * makeCount;
+      const marginRate = (totalProfit / totalCost) * 100;
+
+      const breakEvenPotionPrice = (perTryCost / potionPerCraft) / (1 - feeRate);
+
+      document.getElementById("result").innerHTML = `
+        <p><strong>오일 1개 평균 제작비:</strong> ${oilCost.toFixed(2)}만원</p>
+        <p><strong>1회 제작 총비용:</strong> ${perTryCost.toFixed(2)}만원</p>
+        <p><strong>물약 1개당 수령가:</strong> ${potionNet.toFixed(2)}만원</p>
+        <p><strong>1회당 순이익:</strong> ${profitPerTry.toFixed(2)}만원</p>
+        <p><strong>총 제작 비용:</strong> ${formatKoreanMoney(totalCost)}</p>
+        <p><strong>총 수익:</strong> ${formatKoreanMoney(totalRevenue)}</p>
+        <p style="color:green;"><strong>총 순이익:</strong> ${formatKoreanMoney(totalProfit)}</p>
+        <p style="color:blue;"><strong>이익률:</strong> ${marginRate.toFixed(2)}%</p>
+        <p style="color:orangered;"><strong>손익분기점 물약 판매가:</strong> ${breakEvenPotionPrice.toFixed(2)}만원</p>
+      `;
+    }
+  </script>
+</body>
+</html>
